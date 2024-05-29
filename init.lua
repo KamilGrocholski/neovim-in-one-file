@@ -11,6 +11,8 @@ if not vim.loop.fs_stat(lazypath) then
 end
 
 vim.g.mapleader = " "
+vim.g.netrw_localcopydircmd = "cp -r" -- this solves the problem on my setup
+-- vim.g.netrw_keepdir = 0 -- https://stackoverflow.com/questions/31811335/copying-files-with-vims-netrw-on-mac-os-x-is-broken
 vim.opt.guicursor = "a:block"
 vim.opt.nu = true
 vim.opt.relativenumber = true
@@ -48,22 +50,18 @@ require("lazy").setup({
 	{ "folke/neoconf.nvim", cmd = "Neoconf" },
 	"folke/neodev.nvim",
 
-	-- {
-	-- 	"nyngwang/nvimgelion",
-	-- 	config = function()
-	-- 		vim.cmd("colorscheme nvimgelion")
-	-- 	end,
-	-- },
+	{
+		"rose-pine/neovim",
+		name = "rose-pine",
+		priority = 1000,
+		config = function()
+			vim.cmd("colorscheme rose-pine")
+		end,
+	},
 
-	"luckasRanarison/tailwind-tools.nvim",
+	"xiyaowong/transparent.nvim",
 
-	{ "miikanissi/modus-themes.nvim", priority = 1000 },
-
-	-- {
-	-- 	"rose-pine/neovim",
-	-- 	name = "rose-pine",
-	-- 	config = function() end,
-	-- },
+	"smithbm2316/centerpad.nvim", -- pane centering
 
 	"lewis6991/gitsigns.nvim",
 	"nvim-treesitter/nvim-treesitter",
@@ -171,11 +169,12 @@ require("lazy").setup({
 					"prismals",
 					"clangd",
 					"cssls",
-					-- "tailwindcss",
+					"tailwindcss",
 					"sqlls",
 					"pylsp",
 					"html",
 					"eslint",
+					"volar",
 				},
 			})
 			require("mason-lspconfig").setup_handlers({
@@ -220,11 +219,14 @@ require("lazy").setup({
 				["pylsp"] = function()
 					require("lspconfig").pylsp.setup({})
 				end,
-				-- ["tailwindcss"] = function()
-				-- 	require("lspconfig").tailwindcss.setup({})
-				-- end,
+				["tailwindcss"] = function()
+					require("lspconfig").tailwindcss.setup({})
+				end,
 				["sqlls"] = function()
 					require("lspconfig").sqlls.setup({})
+				end,
+				["volar"] = function()
+					require("lspconfig").volar.setup({})
 				end,
 			})
 			require("fidget").setup({})
@@ -364,11 +366,34 @@ autocmd("BufWinEnter", {
 vim.keymap.set("n", "gh", "<cmd>diffget //2<CR>") -- left diff
 vim.keymap.set("n", "gl", "<cmd>diffget //3<CR>") -- right diff
 
--- require("rose-pine").setup({
--- groups = {
--- 	background = "#16161D",
--- },
--- })
--- vim.cmd("colorscheme rose-pine")
-
-vim.cmd("colorscheme modus")
+require("transparent").setup({ -- Optional, you don't have to run setup.
+	groups = { -- table: default groups
+		"Normal",
+		"NormalNC",
+		"Comment",
+		"Constant",
+		"Special",
+		"Identifier",
+		"Statement",
+		"PreProc",
+		"Type",
+		"Underlined",
+		"Todo",
+		"String",
+		"Function",
+		"Conditional",
+		"Repeat",
+		"Operator",
+		"Structure",
+		"LineNr",
+		"NonText",
+		"SignColumn",
+		"CursorLine",
+		"CursorLineNr",
+		"StatusLine",
+		"StatusLineNC",
+		"EndOfBuffer",
+	},
+	extra_groups = {}, -- table: additional groups that should be cleared
+	exclude_groups = {}, -- table: groups you don't want to clear
+})
