@@ -9,10 +9,11 @@ if not vim.loop.fs_stat(lazypath) then
 		lazypath,
 	})
 end
+vim.opt.rtp:prepend(lazypath)
 
 vim.g.mapleader = " "
-vim.g.netrw_localcopydircmd = "cp -r" -- this solves the problem on my setup
--- vim.g.netrw_keepdir = 0 -- https://stackoverflow.com/questions/31811335/copying-files-with-vims-netrw-on-mac-os-x-is-broken
+vim.g.netrw_localcopydircmd = "cp -r"
+-- vim.g.netrw_keepdir = 0
 vim.opt.guicursor = "a:block"
 vim.opt.nu = true
 vim.opt.relativenumber = true
@@ -44,46 +45,131 @@ vim.keymap.set("x", "p", "P")
 vim.keymap.set({ "n", "v" }, "<leader>d", '"_d')
 vim.opt.clipboard:prepend({ "unnamed", "unnamedplus" })
 
-vim.opt.rtp:prepend(lazypath)
+vim.filetype.add({
+	extension = {
+		templ = "templ",
+	},
+})
+
+-- vim.api.nvim_create_autocmd("BufEnter", {
+-- 	pattern = "*.templ",
+-- 	callback = function()
+-- 		vim.cmd("TSBufEnable highlight")
+-- 	end,
+-- })
+
 require("lazy").setup({
 	"folke/which-key.nvim",
 	{ "folke/neoconf.nvim", cmd = "Neoconf" },
 	"folke/neodev.nvim",
+	"folke/zen-mode.nvim",
 
 	{
-		"rose-pine/neovim",
-		name = "rose-pine",
+		"rebelot/kanagawa.nvim",
 		priority = 1000,
 		config = function()
-			vim.cmd("colorscheme rose-pine")
+			require("kanagawa").setup({
+				overrides = function(colors)
+					local theme = colors.theme
+					return {
+						TelescopeSelection = { bg = theme.ui.bg_search },
+					}
+				end,
+			})
+			require("kanagawa").load("dragon")
+			-- require("kanagawa").load("wave")
+		end,
+	},
+
+	{
+		"nvim-lualine/lualine.nvim",
+		dependencies = { "nvim-tree/nvim-web-devicons" },
+		config = function()
+			require("lualine").setup({
+				options = {
+					theme = "kanagawa",
+				},
+			})
+		end,
+	},
+
+	{
+		"barrett-ruth/live-server.nvim",
+		build = "npm install -g live-server",
+		cmd = { "LiveServerStart", "LiveServerStop" },
+		config = function()
+			require("live-server").setup({})
 		end,
 	},
 
 	"xiyaowong/transparent.nvim",
 
-	"smithbm2316/centerpad.nvim", -- pane centering
-
 	"lewis6991/gitsigns.nvim",
-	"nvim-treesitter/nvim-treesitter",
-	"nvim-treesitter/nvim-treesitter-context",
+
+	{
+		"nvim-treesitter/nvim-treesitter",
+		-- dependencies = {
+		-- 	"vrischmann/tree-sitter-templ",
+		-- },
+		build = ":TSUpdate",
+		config = function()
+			require("nvim-treesitter.configs").setup({
+				ensure_installed = {
+					"vimdoc",
+					"javascript",
+					"typescript",
+					"c",
+					"lua",
+					"rust",
+					"jsdoc",
+					"bash",
+					"templ",
+				},
+				sync_install = false,
+				auto_install = true,
+				indent = {
+					enable = true,
+				},
+				highlight = {
+					enable = true,
+					additional_vim_regex_highlighting = { "markdown" },
+				},
+			})
+
+			local treesitter_parser_config = require("nvim-treesitter.parsers").get_parser_configs()
+			treesitter_parser_config.templ = {
+				install_info = {
+					url = "https://github.com/vrischmann/tree-sitter-templ.git",
+					files = { "src/parser.c", "src/scanner.c" },
+					branch = "master",
+				},
+			}
+
+			vim.treesitter.language.register("templ", "templ")
+		end,
+	},
+	-- "nvim-treesitter/nvim-treesitter-context",
 	"tpope/vim-fugitive",
 	"tpope/vim-commentary",
 	"mbbill/undotree",
-	"ThePrimeagen/harpoon",
+	{
+		"ThePrimeagen/harpoon",
+		branch = "harpoon2",
+		dependencies = { "nvim-lua/plenary.nvim" },
+	},
 	"hrsh7th/cmp-nvim-lsp",
 	"hrsh7th/cmp-buffer",
 	"hrsh7th/cmp-path",
 	"hrsh7th/cmp-cmdline",
 	"hrsh7th/nvim-cmp",
-	"L3MON4D3/LuaSnip",
-	"saadparwaiz1/cmp_luasnip",
 	{
-		"nvim-lualine/lualine.nvim",
-		dependencies = { "nvim-tree/nvim-web-devicons" },
-		config = function()
-			require("lualine").setup()
-		end,
+		"L3MON4D3/LuaSnip",
+		-- follow latest release.
+		version = "v2.*", -- Replace <CurrentMajor> by the latest released major (first number of latest release)
+		-- install jsregexp (optional!).
+		build = "make install_jsregexp",
 	},
+	"saadparwaiz1/cmp_luasnip",
 	{
 		"folke/which-key.nvim",
 		event = "VeryLazy",
@@ -123,12 +209,12 @@ require("lazy").setup({
 				json = { { "prettierd", "prettier" } },
 				yaml = { { "prettierd", "prettier" } },
 			},
-			format_on_save = function(bufnr)
-				if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat then
-					return
-				end
-				return { timeout_ms = 500, lsp_fallback = true }
-			end,
+			-- format_on_save = function(bufnr)
+			-- 	if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat then
+			-- 		return
+			-- 	end
+			-- 	return { timeout_ms = 500, lsp_fallback = true }
+			-- end,
 			formatters = {
 				shfmt = {
 					prepend_args = { "-i", "2" },
@@ -160,74 +246,92 @@ require("lazy").setup({
 			"simrat39/rust-tools.nvim",
 		},
 		config = function()
+			local lspconfig = require("lspconfig")
+			local lsp_capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
+
 			require("mason").setup({})
 			require("mason-lspconfig").setup({
 				ensure_installed = {
+					-- "dockerls",
+					-- "docker_compose_language_service",
+
 					"lua_ls",
 					"rust_analyzer",
-					"tsserver",
 					"prismals",
 					"clangd",
-					"cssls",
 					"tailwindcss",
 					"sqlls",
-					"pylsp",
+					"pyright",
 					"html",
 					"eslint",
 					"volar",
+					"denols",
+
+					"gopls",
+					"cmake",
+					"cssls",
+					"tsserver",
+					-- "templ",
 				},
-			})
-			require("mason-lspconfig").setup_handlers({
-				function(server_name)
-					require("lspconfig")[server_name].setup({})
-				end,
-				["rust_analyzer"] = function()
-					require("rust-tools").setup({})
-				end,
-				["lua_ls"] = function()
-					require("lspconfig").lua_ls.setup({
-						settings = {
-							Lua = {
-								diagnostic = {
-									globals = { "vim" },
+				handlers = {
+					function(server)
+						lspconfig[server].setup({
+							capabilities = lsp_capabilities,
+						})
+					end,
+					["lua_ls"] = function()
+						lspconfig["lua_ls"].setup({
+							capabilities = lsp_capabilities,
+							settings = {
+								Lua = {
+									diagnostic = {
+										globals = { "vim" },
+									},
 								},
 							},
-						},
-					})
-				end,
-				["tsserver"] = function()
-					require("lspconfig").tsserver.setup({})
-				end,
-				["clangd"] = function()
-					require("lspconfig").clangd.setup({})
-				end,
-				["eslint"] = function()
-					require("lspconfig").eslint.setup({})
-				end,
-				["cssls"] = function()
-					require("lspconfig").cssls.setup({})
-				end,
-				["html"] = function()
-					require("lspconfig").html.setup({})
-				end,
-				["gopls"] = function()
-					require("lspconfig").gopls.setup({})
-				end,
-				["prismals"] = function()
-					require("lspconfig").prismals.setup({})
-				end,
-				["pylsp"] = function()
-					require("lspconfig").pylsp.setup({})
-				end,
-				["tailwindcss"] = function()
-					require("lspconfig").tailwindcss.setup({})
-				end,
-				["sqlls"] = function()
-					require("lspconfig").sqlls.setup({})
-				end,
-				["volar"] = function()
-					require("lspconfig").volar.setup({})
-				end,
+						})
+					end,
+					["html"] = function()
+						lspconfig["html"].setup({
+							capabilities = lsp_capabilities,
+							filetypes = { "html", "templ" },
+						})
+					end,
+					["tailwindcss"] = function()
+						lspconfig["tailwindcss"].setup({
+							capabilities = lsp_capabilities,
+							filetypes = {
+								"templ",
+								"astro",
+								"javascript",
+								"typescript",
+								"react",
+								"javascriptreact",
+								"typescriptreact",
+							},
+							init_options = { userLanguages = { templ = "html" } },
+						})
+					end,
+					["tsserver"] = function()
+						lspconfig["tsserver"].setup({
+							capabilities = lsp_capabilities,
+							root_dir = lspconfig.util.root_pattern("package.json"),
+							single_file_support = false,
+						})
+					end,
+					["denols"] = function()
+						lspconfig["denols"].setup({
+							capabilities = lsp_capabilities,
+							root_dir = lspconfig.util.root_pattern("deno.json", "deno.jsonc"),
+						})
+					end,
+					["pyright"] = function()
+						lspconfig["pyright"].setup({
+							capabilities = lsp_capabilities,
+							filetypes = { "python" },
+						})
+					end,
+				},
 			})
 			require("fidget").setup({})
 		end,
@@ -243,23 +347,6 @@ require("gitsigns").setup({
 	},
 })
 
-local mark = require("harpoon.mark")
-local ui = require("harpoon.ui")
-vim.keymap.set("n", "<leader>a", mark.add_file)
-vim.keymap.set("n", "<C-e>", ui.toggle_quick_menu)
-vim.keymap.set("n", "<C-j>", function()
-	ui.nav_file(1)
-end)
-vim.keymap.set("n", "<C-k>", function()
-	ui.nav_file(2)
-end)
-vim.keymap.set("n", "<C-l>", function()
-	ui.nav_file(3)
-end)
-vim.keymap.set("n", "<C-h>", function()
-	ui.nav_file(4)
-end)
-
 vim.api.nvim_create_autocmd("LspAttach", {
 	group = vim.api.nvim_create_augroup("MikalsqweLspAttachGroup", {}),
 	callback = function(e)
@@ -267,7 +354,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		vim.keymap.set("n", "<leader>dn", vim.diagnostic.goto_next, opts)
 		vim.keymap.set("n", "<leader>dp", vim.diagnostic.goto_prev, opts)
 		vim.keymap.set("n", "<leader>dd", vim.diagnostic.open_float, opts)
-		vim.keymap.set("n", "<C-s>", vim.lsp.buf.signature_help, opts)
+		vim.keymap.set({ "n", "i" }, "<C-s>", vim.lsp.buf.signature_help, opts)
 		vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
 		vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts)
 
@@ -324,24 +411,6 @@ vim.keymap.set("n", "<C-f>", builtin.live_grep, {})
 vim.keymap.set("n", "<leader>fb", builtin.buffers, {})
 vim.keymap.set("n", "<leader>fh", builtin.help_tags, {})
 
-require("nvim-treesitter.configs").setup({
-	ensure_installed = {
-		"vimdoc",
-		"javascript",
-		"typescript",
-		"c",
-		"lua",
-		"rust",
-		"go",
-	},
-	sync_install = false,
-	auto_install = true,
-	highlight = {
-		enable = true,
-		additional_vim_regex_highlighting = false,
-	},
-})
-
 vim.keymap.set("n", "<leader>gs", vim.cmd.Git)
 local Mikalsqwe_Fugitive = vim.api.nvim_create_augroup("Mikalsqwe_Fugitive", {})
 local autocmd = vim.api.nvim_create_autocmd
@@ -366,34 +435,36 @@ autocmd("BufWinEnter", {
 vim.keymap.set("n", "gh", "<cmd>diffget //2<CR>") -- left diff
 vim.keymap.set("n", "gl", "<cmd>diffget //3<CR>") -- right diff
 
-require("transparent").setup({ -- Optional, you don't have to run setup.
-	groups = { -- table: default groups
-		"Normal",
-		"NormalNC",
-		"Comment",
-		"Constant",
-		"Special",
-		"Identifier",
-		"Statement",
-		"PreProc",
-		"Type",
-		"Underlined",
-		"Todo",
-		"String",
-		"Function",
-		"Conditional",
-		"Repeat",
-		"Operator",
-		"Structure",
-		"LineNr",
-		"NonText",
-		"SignColumn",
-		"CursorLine",
-		"CursorLineNr",
-		"StatusLine",
-		"StatusLineNC",
-		"EndOfBuffer",
-	},
-	extra_groups = {}, -- table: additional groups that should be cleared
-	exclude_groups = {}, -- table: groups you don't want to clear
-})
+local harpoon = require("harpoon")
+
+-- REQUIRED
+harpoon:setup()
+-- REQUIRED
+
+vim.keymap.set("n", "<leader>a", function()
+	harpoon:list():add()
+end)
+vim.keymap.set("n", "<C-e>", function()
+	harpoon.ui:toggle_quick_menu(harpoon:list())
+end)
+
+vim.keymap.set("n", "<C-j>", function()
+	harpoon:list():select(1)
+end)
+vim.keymap.set("n", "<C-k>", function()
+	harpoon:list():select(2)
+end)
+vim.keymap.set("n", "<C-l>", function()
+	harpoon:list():select(3)
+end)
+vim.keymap.set("n", "<C-h>", function()
+	harpoon:list():select(4)
+end)
+
+-- Toggle previous & next buffers stored within Harpoon list
+vim.keymap.set("n", "<C-S-P>", function()
+	harpoon:list():prev()
+end)
+vim.keymap.set("n", "<C-S-N>", function()
+	harpoon:list():next()
+end)
