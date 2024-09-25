@@ -1,4 +1,3 @@
-local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
 	local lazyrepo = "https://github.com/folke/lazy.nvim.git"
 	local out = vim.fn.system({ "git", "clone", "--filter=blob:none", "--branch=stable", lazyrepo, lazypath })
@@ -128,6 +127,13 @@ require("lazy").setup({
 		"hrsh7th/cmp-cmdline",
 		"hrsh7th/nvim-cmp",
 		{
+			"L3MON4D3/LuaSnip",
+			-- follow latest release.
+			version = "v2.*", -- Replace <CurrentMajor> by the latest released major (first number of latest release)
+			-- install jsregexp (optional!).
+			build = "make install_jsregexp",
+		},
+		{
 			"williamboman/mason-lspconfig.nvim",
 			dependencies = {
 				"williamboman/mason.nvim",
@@ -144,13 +150,14 @@ require("lazy").setup({
 						"lua_ls",
 						"rust_analyzer",
 						"clangd",
-						"prismals",
-						"tailwindcss",
 						"sqlls",
 						"pyright",
-						"html",
 						"gopls",
 						"ts_ls",
+						"html",
+						"eslint",
+						"tailwindcss",
+						"prismals",
 					},
 					handlers = {
 						function(server)
